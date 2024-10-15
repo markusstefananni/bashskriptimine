@@ -1,0 +1,38 @@
+#!/bin/bash
+
+# Kontrollime, kas kasutajanimi on sisestatud
+if [ -z "$1" ]; then
+  echo "Kasutajanimi puudub! Kasutamine: ./lisa_kasutaja <kasutajanimi>"
+  exit 1
+fi
+
+# Määrame muutujaks kasutajanime
+KASUTAJANIMI=$1
+
+# Kontrollime, kas kasutaja juba eksisteerib
+if id "$KASUTAJANIMI" &>/dev/null; then
+  echo "Kasutaja '$KASUTAJANIMI' juba eksisteerib!"
+  exit 1
+fi
+
+# Loome kasutaja koos kodukataloogiga
+sudo useradd -m -d /home/$KASUTAJANIMI $KASUTAJANIMI
+
+# Kontrollime, kas kasutaja loodi edukalt
+if [ $? -eq 0 ]; then
+  echo "Kasutaja '$KASUTAJANIMI' loodi edukalt."
+else
+  echo "Kasutaja loomine ebaõnnestus."
+  exit 1
+fi
+
+# Loome vajalikud peidetud failid kasutaja kodukataloogi
+sudo -u $KASUTAJANIMI touch /home/$KASUTAJANIMI/.bashrc
+sudo -u $KASUTAJANIMI touch /home/$KASUTAJANIMI/.profile
+sudo -u $KASUTAJANIMI touch /home/$KASUTAJANIMI/.bash_logout
+
+# Kontrollime loodud kodukataloogi ja failide struktuuri
+echo "Kontrollime loodud kodukataloogi:"
+ls -la /home/$KASUTAJANIMI
+
+echo "Kasutaja '$KASUTAJANIMI' on edukalt loodud koos vajalike peidetud failidega!"

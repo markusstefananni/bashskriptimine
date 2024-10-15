@@ -1,0 +1,33 @@
+#!/bin/bash
+
+# Kontrollime, kas skripti käivitab root kasutaja
+if [[ $(id -u) -ne 0 ]]; then
+    echo "Ainult root kasutaja saab seda skripti käivitada."
+    exit 1
+fi
+
+# Kontrollime, kas kasutajate ja paroolide failid on antud
+if [ -z "$1" ] || [ -z "$2" ]; then
+    echo "Kasutus: $0 <kasutajate_fail> <paroolide_fail>"
+    exit 1
+fi
+
+kasutajate_fail=$1
+paroolide_fail=$2
+
+# Kontrollime, kas failid eksisteerivad
+if [ ! -f "$kasutajate_fail" ] || [ ! -f "$paroolide_fail" ]; then
+    echo "Kas fail $kasutajate_fail või fail $paroolide_fail ei leitud."
+    exit 1
+fi
+
+# Loe kasutajate ja paroolide failid paralleelselt
+paste "$kasutajate_fail" "$paroolide_fail" | while IFS="$(printf '\t')" read -r kasutajanimi parool; do
+    if [ -n "$kasutajanimi" ] && [ -n "$parool" ]; then
+        ./lisa_kasutaja "$kasutajanimi"
+        echo "$kasutajanimi:$parool" | chpasswd
+        echo "Kasutaja $kasutajanimi ja parool on seadistatud."
+    else
+        echo "Kasutaja või parooli viga failis: $kasutajanimi"
+    fi
+done
