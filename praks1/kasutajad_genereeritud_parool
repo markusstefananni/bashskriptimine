@@ -1,0 +1,60 @@
+#!/bin/bash
+# Skript loeb kasutajanimed failist, genereerib neile paroolid ja logib need
+# Skript töötab ainult root kasutaja all ja mitte sudo kaudu
+
+# Kontrollime, kas skripti käivitatakse sudo kaudu
+if [ -n "$SUDO_USER" ]; then
+    echo "Viga: Skripti ei tohi käivitada sudo kaudu!"
+    exit 1
+fi
+
+# Kontrollime, kas skripti käivitab root kasutaja
+if [ "$(id -u)" -ne 0 ]; then
+    echo "Viga: Skript peab olema käivitatud root kasutajana."
+    exit 1
+fi
+
+# Kontrollime, kas kasutajate fail on antud
+if [ $# -eq 0 ]; then
+    echo "Viga: Sisendfaili ei ole määratud."
+    echo "Kasutamine: $0 <kasutajate_fail>"
+    exit 2
+fi
+
+fail="$1"
+logifail="kasutajad_paroolidega.log"
+
+# Kontrollime, kas sisendfail on olemas ja loetav
+if [ ! -r "$fail" ];then
+    echo "Viga: Faili '$fail' ei eksisteeri või pole lugemisõigusi."
+    exit 3
+fi
+
+# Loome kasutajad ja genereerime neile paroolid
+while read -r kasutaja; do
+    if [ -n "$kasutaja" ]; then
+        # Genereerime parooli pikkusega 8 sümbolit
+        parool=$(pwgen 8 1)
+
+        # Kontrollime, kas kasutaja on juba süsteemis olemas
+        if id "$kasutaja" &>/dev/null; then
+            echo "Hoiatus: Kasutaja '$kasutaja' on juba süsteemis olemas. Vahele jäetud."
+        else
+            # Loome kasutaja ja määrame Bash shelli
+            useradd -m -s /bin/bash "$kasutaja"
+
+            # Määrame kasutajale genereeritud parooli
+            echo "$kasutaja:$parool" | chpasswd
+
+            # Salvestame kasutajanime ja parooli logifaili
+            echo "$kasutaja:$parool" >> "$logifail"
+            echo "Kasutajale '$kasutaja' genereeriti ja määrati parool."
+        fi
+    else
+        # Hoiatus tühjade ridade puhul
+        echo "Hoiatus: Tühi rida failis, kasutajanimi puudub. Vahele jäetud."
+    fi
+done < "$fail"
+
+# Teavitame logifaili asukohast
+echo "Kasutajate ja paroolide logifail on salvestatud faili '$logifail'."

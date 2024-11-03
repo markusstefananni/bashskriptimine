@@ -13,9 +13,15 @@ failinimi=$1
 # Kontrolli, kas fail eksisteerib ja on loetav
 if [ -f "$failinimi" -a -r "$failinimi" ]; then
     echo "fail on korras"
-    while read nimi; do
-        # Kutsu lisa_kasutaja skript iga kasutajanime jaoks
-        ./lisa_kasutaja "$nimi"
+    while IFS=':' read -r kasutajanimi parool; do
+        # Kontrolli, kas mõlemad väljad on olemas
+        if [ -n "$kasutajanimi" ] && [ -n "$parool" ]; then
+            # Lisa kasutaja ja määra parool
+            ./lisa_kasutaja "$kasutajanimi"
+            echo "$kasutajanimi:$parool" | chpasswd
+        else
+            echo "Vigane rida: $kasutajanimi"
+        fi
     done < "$failinimi"
 else
     echo "probleem failiga $failinimi"
